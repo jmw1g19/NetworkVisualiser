@@ -30,7 +30,7 @@ public class NetworkVisualiser {
                     description);
         }
         PcapIf device = allDevices.get(userInput.nextInt()); // Allow the user to select a device.
-        System.out.printf("\nChoosing '%s'...\n",
+        System.out.printf("\n'%s' was selected!\n",
                 (device.getDescription() != null) ? device.getDescription()
                         : device.getName());
 
@@ -51,16 +51,56 @@ public class NetworkVisualiser {
         // Store a list of all the packets.
         ArrayList<JPacket> packets = new ArrayList<>();
 
-        // Capture 10 packets.
-        int status = pcap.loop(10, new PacketHandler(packets), "build");
-        System.out.println(status);
+        // Start Pcap capturing thread.
+        PcapThread pcapCapture = new PcapThread(pcap, packets);
+        pcapCapture.start();
+
+        // Wait for the user to press something, then (safely) stop capture and wait for thread to terminate.
+        System.in.read();
+        pcapCapture.stopCapture();
+        try {
+            pcapCapture.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         // Output all the packets.
-        for(JPacket p : packets){
-            System.out.println(p.toString());
+        // TODO: Ignore RTCP-SDES items.
+        try{
+            for(JPacket p : packets){
+                System.out.println(p.toString());
+            }
         }
+        catch(Exception e){
+
+        }
+
+        // Example processing: total amount of data captured.
+        System.out.println("You captured " + PacketProcessor.totalSize(packets) + " bytes worth of data!");
 
         // Close our connection.
         pcap.close();
+    }
+
+    /**
+     * This thread is responsible for capturing packets.
+     * By multi-threading, the user will retain control of the GUI (when it is written) whilst packets are being captured.
+     */
+    static class PcapThread extends Thread {
+        Pcap pcap;
+        ArrayList<JPacket> packets;
+
+        public PcapThread(Pcap pcapObject, ArrayList<JPacket> packetList) {
+            pcap = pcapObject;
+            packets = packetList;
+        }
+
+        public void run(){
+            pcap.loop(Pcap.LOOP_INFINITE, new PacketHandler(packets), "build");
+        }
+
+        public void stopCapture(){
+            pcap.breakloop();
+        }
     }
 }

@@ -5,6 +5,9 @@ import org.jnetpcap.protocol.network.Ip4;
 
 import java.util.ArrayList;
 
+/**
+ * This class is responsible for handling packets as they arrive.
+ */
 public class PacketHandler implements PcapPacketHandler {
     ArrayList<JPacket> packetList;
 
@@ -23,8 +26,9 @@ public class PacketHandler implements PcapPacketHandler {
      */
     @Override
     public void nextPacket(PcapPacket pcapPacket, Object o) {
-        // We can do some processing here before adding them into the PacketList.
+        // We can do some pre-processing here before adding them into the PacketList.
         // For now, we'll just add each packet to the PacketList.
+        System.out.println("Packet!");
         packetList.add(pcapPacket);
 
         // Example: outputting the source and destination of all IP packets.
