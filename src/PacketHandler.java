@@ -1,7 +1,6 @@
 import org.jnetpcap.packet.JPacket;
 import org.jnetpcap.packet.PcapPacket;
 import org.jnetpcap.packet.PcapPacketHandler;
-import org.jnetpcap.protocol.network.Ip4;
 
 import java.util.ArrayList;
 
@@ -30,19 +29,5 @@ public class PacketHandler implements PcapPacketHandler {
         // For now, we'll just add each packet to the PacketList.
         System.out.println("Packet!");
         packetList.add(pcapPacket);
-
-        // Example: outputting the source and destination of all IP packets.
-        Ip4 ip = new Ip4();
-        if (pcapPacket.hasHeader(ip)) {
-            byte[] sIP; byte[] dIP;
-            sIP = ip.source();
-            dIP = ip.destination();
-
-            String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(sIP);
-            String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(dIP);
-
-            System.out.println("IP packet found! Source: " + sourceIP + " Destination: " + destinationIP);
-        }
-
     }
 }

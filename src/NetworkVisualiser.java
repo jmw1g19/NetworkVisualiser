@@ -1,13 +1,19 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.stage.Stage;
+import org.jnetpcap.Pcap;
+import org.jnetpcap.PcapIf;
+import org.jnetpcap.packet.JPacket;
+
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
-import org.jnetpcap.*;
-import org.jnetpcap.packet.*;
-
-public class NetworkVisualiser {
-    static Scanner userInput = new Scanner(System.in);
+public class NetworkVisualiser extends Application {
+    static Scanner userInput = new Scanner(System.in); // For now, we will have a static scanner for input.
+    static Hashtable<Long, Integer> data; // For now, we'll have a static dictionary for the processed packet data.
     public static void main(String[] args) throws IOException {
         StringBuilder errorBuffer = new StringBuilder(); // Used to store any error messages.
         List<PcapIf> allDevices = new ArrayList<PcapIf>(); // Stores the list of NICs.
@@ -64,22 +70,44 @@ public class NetworkVisualiser {
             e.printStackTrace();
         }
 
-        // Output all the packets.
-        // TODO: Ignore RTCP-SDES items.
-        try{
-            for(JPacket p : packets){
-                System.out.println(p.toString());
-            }
-        }
-        catch(Exception e){
-
-        }
-
-        // Example processing: total amount of data captured.
+        // Example processing: total amount of data captured, packets per second and data per second.
         System.out.println("You captured " + PacketProcessor.totalSize(packets) + " bytes worth of data!");
+        System.out.println(PacketProcessor.packetsPerSecond(packets, packets.get(0).getCaptureHeader().seconds()));
+        data = PacketProcessor.dataPerSecond(packets, packets.get(0).getCaptureHeader().seconds());
+        System.out.println(data);
 
         // Close our connection.
         pcap.close();
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage stage){
+        // Set up x-axis and y-axis.
+        Long startingRange = Collections.min(data.keySet());
+        Long endingRange = Collections.max(data.keySet());
+        // TODO: Adjust y-axis values to eliminate unnecessary space.
+        NumberAxis xAxis = new NumberAxis(startingRange, endingRange, 1);
+        NumberAxis yAxis = new NumberAxis();
+        xAxis.setLabel("Time Since Capture Began (Seconds)");
+        yAxis.setLabel("Bytes Transferred");
+
+        // Add all data from the processed packets.
+        AreaChart<Number, Number> packetChart = new AreaChart<>(xAxis, yAxis);
+        packetChart.setTitle("Network Activity");
+        XYChart.Series chartData = new XYChart.Series();
+        chartData.setName("Bytes Per Second");
+        for (Long second : data.keySet()) {
+            chartData.getData().add(new XYChart.Data(second, data.get(second)));
+        }
+        packetChart.getData().addAll(chartData);
+        packetChart.setCreateSymbols(false);
+        packetChart.setLegendVisible(false);
+
+        // Set up our JavaFX GUI.
+        Scene scene  = new Scene(packetChart,800,600);
+        stage.setScene(scene);
+        stage.show();
     }
 
     /**
@@ -90,15 +118,18 @@ public class NetworkVisualiser {
         Pcap pcap;
         ArrayList<JPacket> packets;
 
+        // The constructor merely sets member variables.
         public PcapThread(Pcap pcapObject, ArrayList<JPacket> packetList) {
             pcap = pcapObject;
             packets = packetList;
         }
 
+        // When the thread is started, capture begins.
         public void run(){
             pcap.loop(Pcap.LOOP_INFINITE, new PacketHandler(packets), "build");
         }
 
+        // A special function to stop capture safely, before terminating the thread.
         public void stopCapture(){
             pcap.breakloop();
         }
