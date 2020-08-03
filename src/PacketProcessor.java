@@ -31,7 +31,7 @@ public class PacketProcessor {
         for(JPacket p : packets){
             // We normalise the seconds values relative to the start of the capture.
             Long second = p.getCaptureHeader().seconds() - startingSecond;
-            if (data.keySet().contains(second)){
+            if (data.containsKey(second)){
                 data.put(second, data.get(second) + p.getTotalSize());
             }
             else{
@@ -52,7 +52,7 @@ public class PacketProcessor {
         for(JPacket p : packets){
             // We normalise the seconds values relative to the start of the capture.
             Long second = p.getCaptureHeader().seconds() - startingSecond;
-            if (data.keySet().contains(second)){
+            if (data.containsKey(second)){
                 data.put(second, data.get(second) + 1);
             }
             else{

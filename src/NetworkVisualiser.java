@@ -1,22 +1,25 @@
 import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.chart.AreaChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
 import javafx.stage.Stage;
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.packet.JPacket;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class NetworkVisualiser extends Application {
     static Scanner userInput = new Scanner(System.in); // For now, we will have a static scanner for input.
-    static Hashtable<Long, Integer> data; // For now, we'll have a static dictionary for the processed packet data.
+    static ArrayList<JPacket> packets = new ArrayList<>(); // Stores a list of all the packets captured on this instance.
+
+    /**
+     * The main function. Responsible for starting the program by selecting an NIC and capturing packets,
+     * before generating the UI.
+     */
     public static void main(String[] args) throws IOException {
         StringBuilder errorBuffer = new StringBuilder(); // Used to store any error messages.
-        List<PcapIf> allDevices = new ArrayList<PcapIf>(); // Stores the list of NICs.
+        List<PcapIf> allDevices = new ArrayList<>(); // Stores the list of NICs.
 
         // Find all NICs and store them in our ArrayList.
         int r = Pcap.findAllDevs(allDevices, errorBuffer);
@@ -49,19 +52,17 @@ public class NetworkVisualiser extends Application {
         Pcap pcap = Pcap.openLive(device.getName(), snapLength, flags, timeout, errorBuffer);
         // If an error occurs, pcap will be null.
         if (pcap == null) {
-            System.err.printf("Error while opening device for capture: "
+            System.err.print("Error while opening device for capture: "
                     + errorBuffer.toString());
             return;
         }
-
-        // Store a list of all the packets.
-        ArrayList<JPacket> packets = new ArrayList<>();
 
         // Start Pcap capturing thread.
         PcapThread pcapCapture = new PcapThread(pcap, packets);
         pcapCapture.start();
 
         // Wait for the user to press something, then (safely) stop capture and wait for thread to terminate.
+        //noinspection ResultOfMethodCallIgnored
         System.in.read();
         pcapCapture.stopCapture();
         try {
@@ -73,46 +74,36 @@ public class NetworkVisualiser extends Application {
         // Example processing: total amount of data captured, packets per second and data per second.
         System.out.println("You captured " + PacketProcessor.totalSize(packets) + " bytes worth of data!");
         System.out.println(PacketProcessor.packetsPerSecond(packets, packets.get(0).getCaptureHeader().seconds()));
-        data = PacketProcessor.dataPerSecond(packets, packets.get(0).getCaptureHeader().seconds());
-        System.out.println(data);
+        System.out.println(PacketProcessor.dataPerSecond(packets, packets.get(0).getCaptureHeader().seconds()));
 
         // Close our connection.
         pcap.close();
         launch(args);
     }
 
+    /**
+     * This function will start the JavaFX Application Thread, and show the GUI to the user.
+     * Since we delegated generating the GUI to the UserInterface class, we just call all the necessary functions here.
+     */
     @Override
     public void start(Stage stage){
-        // Set up x-axis and y-axis.
-        Long startingRange = Collections.min(data.keySet());
-        Long endingRange = Collections.max(data.keySet());
-        // TODO: Adjust y-axis values to eliminate unnecessary space.
-        NumberAxis xAxis = new NumberAxis(startingRange, endingRange, 1);
-        NumberAxis yAxis = new NumberAxis();
-        xAxis.setLabel("Time Since Capture Began (Seconds)");
-        yAxis.setLabel("Bytes Transferred");
+        // Create a new UserInterface.
+        UserInterface UI = new UserInterface();
 
-        // Add all data from the processed packets.
-        AreaChart<Number, Number> packetChart = new AreaChart<>(xAxis, yAxis);
-        packetChart.setTitle("Network Activity");
-        XYChart.Series chartData = new XYChart.Series();
-        chartData.setName("Bytes Per Second");
-        for (Long second : data.keySet()) {
-            chartData.getData().add(new XYChart.Data(second, data.get(second)));
-        }
-        packetChart.getData().addAll(chartData);
-        packetChart.setCreateSymbols(false);
-        packetChart.setLegendVisible(false);
+        // Call all its' functions.
+        UI.generateChart(packets);
 
-        // Set up our JavaFX GUI.
-        Scene scene  = new Scene(packetChart,800,600);
-        stage.setScene(scene);
+        // Set the 'stage' object, adjust some options, and show the GUI.
+        stage.setScene(UI.getRoot());
+        stage.setTitle("NetworkVisualiser - Work In Progress");
+        stage.setMinHeight(600);
+        stage.setMinWidth(600);
         stage.show();
     }
 
     /**
      * This thread is responsible for capturing packets.
-     * By multi-threading, the user will retain control of the GUI (when it is written) whilst packets are being captured.
+     * By multi-threading, the user can stop the capture whenever they wish, as control is maintained over the console.
      */
     static class PcapThread extends Thread {
         Pcap pcap;

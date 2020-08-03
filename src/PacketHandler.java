@@ -7,6 +7,7 @@ import java.util.ArrayList;
 /**
  * This class is responsible for handling packets as they arrive.
  */
+@SuppressWarnings("rawtypes")
 public class PacketHandler implements PcapPacketHandler {
     ArrayList<JPacket> packetList;
 
