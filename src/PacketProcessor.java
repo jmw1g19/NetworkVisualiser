@@ -1,3 +1,4 @@
+import org.jnetpcap.packet.JHeader;
 import org.jnetpcap.packet.JPacket;
 
 import java.util.ArrayList;
@@ -60,6 +61,20 @@ public class PacketProcessor {
             }
         }
         return data; // In this format, we can easily import it into a graph.
+    }
+
+    /**
+     * This function returns all packets from a list which have a specified header.
+     * @param packets The list of packets to check.
+     * @param header The header to search for.
+     * @return A list containing all packets which have the given header.
+     */
+    public static ArrayList<JPacket> findPacketsWithHeader(ArrayList<JPacket> packets, JHeader header){
+        ArrayList<JPacket> matchingPackets = new ArrayList<>();
+        for(JPacket p : packets){
+            if(p.hasHeader(header)) { matchingPackets.add(p); }
+        }
+        return matchingPackets;
     }
 
     // Function ideas:

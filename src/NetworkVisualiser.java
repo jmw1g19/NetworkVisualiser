@@ -92,6 +92,7 @@ public class NetworkVisualiser extends Application {
 
         // Call all its' functions.
         UI.generateChart(packets);
+        UI.generatePacketSelector(packets);
 
         // Set the 'stage' object, adjust some options, and show the GUI.
         stage.setScene(UI.getRoot());

@@ -1,12 +1,18 @@
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.chart.XYChart.Data;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.RowConstraints;
+import javafx.scene.text.Font;
 import org.jnetpcap.packet.JPacket;
 
 import java.util.ArrayList;
@@ -19,12 +25,22 @@ import java.util.Hashtable;
 @SuppressWarnings("rawtypes")
 public class UserInterface{
     TabPane mainContent; // Our root node in the scene graph, a TabPane.
-    VBox chartPane = new VBox(); // For now, a VBox will be used for the 'Overall' tab.
+    GridPane chartPane = new GridPane(); // A GridPane is used for the 'Overall' tab.
 
     /**
-     * The contructor for the class. Responsible for setting up the overall structure of the UI.
+     * The constructor for the class. Responsible for setting up the overall structure of the UI.
      */
     public UserInterface() {
+        // Set-up the 'Overall' tab.
+        RowConstraints equalSizing = new RowConstraints();
+        equalSizing.setPercentHeight(50);
+        chartPane.getRowConstraints().add(equalSizing);
+        ColumnConstraints fullWidth = new ColumnConstraints();
+        fullWidth.setPercentWidth(100);
+        chartPane.getColumnConstraints().add(fullWidth);
+        chartPane.setPadding(new Insets(10));
+        chartPane.setHgap(5);
+
         // Generate the tab objects.
         Tab tab1 = new Tab("Overall", chartPane);
         Tab tab2 = new Tab("Layer 2"  , new Label("Work In Progress"));
@@ -46,6 +62,36 @@ public class UserInterface{
      */
     public Scene getRoot(){
         return new Scene(mainContent,800, 600);
+    }
+
+    /**
+     * This function generates the packet selector for the 'Overall' tab.
+     * @param packetList The list of packets to generate a ListView for.
+     */
+    public void generatePacketSelector(ArrayList<JPacket> packetList){
+        // Create a ListView and populate it with information for each packet.
+        ListView<String> packetSelector = new ListView<String>();
+        int count = 0;
+        for(JPacket p : packetList) {
+            // TODO: Add summary of packet. Example: "Packet 1: 400 bytes - TCP Acknowledgement"
+            packetSelector.getItems().add("Packet " + (count + 1) + ": " + p.getTotalSize() +  " bytes");
+            count++;
+        }
+
+        // Set up event handling for the ListView.
+        packetSelector.addEventHandler(MouseEvent.MOUSE_CLICKED, new UserInterfaceHandler.PacketClick(packetSelector, packetList));
+
+        // Display the selector beneath the graph on the 'Overall' tab.
+        GridPane.setColumnIndex(packetSelector, 0);
+        GridPane.setRowIndex(packetSelector, 1);
+
+        // Add a Label to help the user...
+        Label instructions = new Label("Double click on a packet to view more information about it");
+        instructions.setFont(new Font(9));
+        GridPane.setColumnIndex(instructions, 0);
+        GridPane.setRowIndex(instructions, 2);
+
+        chartPane.getChildren().addAll(packetSelector, instructions);
     }
 
     /**
@@ -78,6 +124,8 @@ public class UserInterface{
         // Format the chart, and add to the pane responsible for the 'Overall' tab.
         packetChart.setCreateSymbols(false);
         packetChart.setLegendVisible(false);
+        GridPane.setColumnIndex(packetChart, 0);
+        GridPane.setRowIndex(packetChart, 0);
         chartPane.getChildren().add(packetChart);
     }
 }
