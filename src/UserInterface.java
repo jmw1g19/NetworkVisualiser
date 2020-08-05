@@ -73,8 +73,8 @@ public class UserInterface{
         ListView<String> packetSelector = new ListView<String>();
         int count = 0;
         for(JPacket p : packetList) {
-            // TODO: Add summary of packet. Example: "Packet 1: 400 bytes - TCP Acknowledgement"
-            packetSelector.getItems().add("Packet " + (count + 1) + ": " + p.getTotalSize() +  " bytes");
+            packetSelector.getItems().add("Packet " + (count + 1) + ": " + p.getTotalSize() +  " bytes | " +
+                PacketProcessor.generatePacketSummary(p));
             count++;
         }
 

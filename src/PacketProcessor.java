@@ -1,5 +1,10 @@
 import org.jnetpcap.packet.JHeader;
 import org.jnetpcap.packet.JPacket;
+import org.jnetpcap.protocol.lan.Ethernet;
+import org.jnetpcap.protocol.network.Arp;
+import org.jnetpcap.protocol.network.Ip4;
+import org.jnetpcap.protocol.tcpip.Http;
+import org.jnetpcap.protocol.tcpip.Tcp;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -75,6 +80,100 @@ public class PacketProcessor {
             if(p.hasHeader(header)) { matchingPackets.add(p); }
         }
         return matchingPackets;
+    }
+
+    /**
+     * This function returns a one-line string which summarises the packet, based on the headers.
+     * @param packet The packet to produce a summary for.
+     * @return A String, containing the summary.
+     */
+    public static String generatePacketSummary(JPacket packet){
+        String summary = "";
+        // To provide the most useful summary, we must start at layer 7 and work downwards, capturing the first
+        // header we find.
+        // TODO: Additional comments and other protocols.
+
+        // Layer 7 - HTTP
+        // 'HTTP 200 OK' / 'HTTP GET /sites/...'
+        if(packet.hasHeader(new Http())){
+            Http header = new Http();
+            if(packet.getHeader(header).isResponse()){
+                String responseCode = packet.getHeader(header).fieldValue(Http.Response.ResponseCode);
+                String responseMessage = packet.getHeader(header).fieldValue(Http.Response.ResponseCodeMsg);
+                String response = responseCode + " " + responseMessage;
+                summary += "HTTP " + response;
+            }
+            else{
+                String requestMethod = packet.getHeader(header).fieldValue(Http.Request.RequestMethod);
+                String requestURL = packet.getHeader(header).fieldValue(Http.Request.RequestUrl);
+                String request = requestMethod + requestURL;
+                summary += "HTTP " + request;
+            }
+            return summary;
+        }
+        // Layer 4 - TCP
+        // TCP Acknowledgment | 127.0.0.1:80 --> 127.0.0.1:1923
+        else if(packet.hasHeader(new Tcp())){
+            Tcp header = new Tcp();
+            summary += "TCP ";
+            if(packet.getHeader(header).flags_ACK()){ summary += "Acknowledgment "; }
+            if(packet.getHeader(header).flags_PSH()){ summary += "Push "; }
+            if(packet.getHeader(header).flags_SYN()){ summary += "Synchronisation "; }
+            if(packet.getHeader(header).flags_URG()){ summary += "Urgent "; }
+            if(packet.getHeader(header).flags_RST()){ summary += "Reset "; }
+            if(packet.getHeader(header).flags_FIN()){ summary += "Final "; }
+            int source = packet.getHeader(header).source();
+            int destination = packet.getHeader(header).destination();
+            // TODO: Optimise.
+            Ip4 ipHeader = new Ip4();
+            byte[] sourceBytes = packet.getHeader(ipHeader).source();
+            String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(sourceBytes);
+            byte[] destinationBytes = packet.getHeader(ipHeader).destination();
+            String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(destinationBytes);
+            summary += ("| " + sourceIP + ":" + source + " --> " + destinationIP + ":" + destination);
+            return summary;
+        }
+        // Layer 3 - IP
+        // 'IP - 127.0.0.1 --> 127.0.0.1'
+        else if(packet.hasHeader(new Ip4())){
+            Ip4 header = new Ip4();
+            byte[] sourceBytes = packet.getHeader(header).source();
+            String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(sourceBytes);
+            byte[] destinationBytes = packet.getHeader(header).destination();
+            String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(destinationBytes);
+            summary += "IP - " + sourceIP + " --> " + destinationIP;
+            return summary;
+        }
+        // Layer 2 - ARP
+        // 'ARP Request - ab:cd:ef:gh looking for 127.0.0.1'
+        else if (packet.hasHeader(new Arp())){
+            summary = "ARP ";
+            Arp header = new Arp();
+            // Is it a request or a reply?
+            if(packet.getHeader(header).operation() == 1) {
+                summary += "Request - ";
+                byte[] SHA = packet.getHeader(header).sha();
+                String sourceMAC = org.jnetpcap.packet.format.FormatUtils.mac(SHA);
+                byte[] TPA = packet.getHeader(header).tpa();
+                String targetIP = org.jnetpcap.packet.format.FormatUtils.ip(TPA);
+                summary += sourceMAC + " looking for " + targetIP;
+            }
+            else{
+                summary += "Reply - ";
+                byte[] SHA = packet.getHeader(header).sha();
+                String sourceMAC = org.jnetpcap.packet.format.FormatUtils.mac(SHA);
+                byte[] SPA = packet.getHeader(header).spa();
+                String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(SPA);
+                summary += sourceIP + " is " + sourceMAC;
+            }
+            return summary;
+        }
+        // Layer 2 - Ethernet
+        // Work In Progress
+        else if (packet.hasHeader(new Ethernet())){
+            return "Ethernet";
+        }
+        return summary;
     }
 
     // Function ideas:
