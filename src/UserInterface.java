@@ -46,14 +46,12 @@ public class UserInterface{
         Tab tab2 = new Tab("Layer 2"  , new Label("Work In Progress"));
         Tab tab3 = new Tab("Layer 3" , new Label("Work In Progress"));
         Tab tab4 = new Tab("Layer 4"  , new Label("Work In Progress"));
-        Tab tab5 = new Tab("Layer 5" , new Label("Work In Progress"));
-        Tab tab6 = new Tab("Layer 6"  , new Label("Work In Progress"));
-        Tab tab7 = new Tab("Layer 7" , new Label("Work In Progress"));
+        Tab tab5 = new Tab("Layer 7" , new Label("Work In Progress"));
 
         // Set up the TabPane.
         mainContent = new TabPane();
         mainContent.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        mainContent.getTabs().addAll(tab1, tab2, tab3, tab4, tab5, tab6, tab7);
+        mainContent.getTabs().addAll(tab1, tab2, tab3, tab4, tab5);
     }
 
     /**

@@ -5,6 +5,11 @@ import org.jnetpcap.protocol.network.Arp;
 import org.jnetpcap.protocol.network.Ip4;
 import org.jnetpcap.protocol.tcpip.Http;
 import org.jnetpcap.protocol.tcpip.Tcp;
+import org.jnetpcap.protocol.tcpip.Udp;
+import org.jnetpcap.protocol.voip.RtcpReceiverReport;
+import org.jnetpcap.protocol.voip.RtcpSenderReport;
+import org.jnetpcap.protocol.voip.Rtp;
+import org.jnetpcap.protocol.voip.Sdp;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -109,10 +114,41 @@ public class PacketProcessor {
                 String request = requestMethod + requestURL;
                 summary += "HTTP " + request;
             }
-            return summary;
+        }
+        // Layer 7 - RTP
+        // 'RTP - 30 bytes | Sequence 10884 Timestamp 185608827'
+        else if(packet.hasHeader(new Rtp())){
+            Rtp header = new Rtp();
+            int size = packet.getHeader(header).size();
+            int sequence = packet.getHeader(header).sequence();
+            long timestamp = packet.getHeader(header).timestamp();
+            summary += "RTP - " + size + " bytes | Sequence " + sequence + " Timestamp " + timestamp;
+        }
+        // Layer 7 - RTCP-RR
+        // TODO: Find the fields in a ReceiverReport.
+        else if(packet.hasHeader(new RtcpReceiverReport())){
+            summary = "RTCP Receiver Report";
+        }
+        // Layer 7 - RTCP-SR
+        // TODO: Find the fields in a SenderReport.
+        else if(packet.hasHeader(new RtcpSenderReport())){
+            summary = "RTCP Sender Report";
+        }
+        // Layer 7 - SDP
+        // 'SDP - audio 10142 RTP/AVP 18 0 8 101'
+        else if(packet.hasHeader(new Sdp())){
+            Sdp header = new Sdp();
+            String mediaDescription = packet.getHeader(header).getDescription();
+            summary = "SDP - " + mediaDescription;
+        }
+        // Layer 4 - UDP
+        // 'UDP - 52 bytes'
+        else if(packet.hasHeader(new Udp())){
+            Udp header = new Udp();
+            summary = "UDP - " + packet.getHeader(header).length() + " bytes";
         }
         // Layer 4 - TCP
-        // TCP Acknowledgment | 127.0.0.1:80 --> 127.0.0.1:1923
+        // 'TCP Acknowledgment | 127.0.0.1:80 --> 127.0.0.1:1923'
         else if(packet.hasHeader(new Tcp())){
             Tcp header = new Tcp();
             summary += "TCP ";
@@ -131,7 +167,6 @@ public class PacketProcessor {
             byte[] destinationBytes = packet.getHeader(ipHeader).destination();
             String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(destinationBytes);
             summary += ("| " + sourceIP + ":" + source + " --> " + destinationIP + ":" + destination);
-            return summary;
         }
         // Layer 3 - IP
         // 'IP - 127.0.0.1 --> 127.0.0.1'
@@ -142,7 +177,6 @@ public class PacketProcessor {
             byte[] destinationBytes = packet.getHeader(header).destination();
             String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(destinationBytes);
             summary += "IP - " + sourceIP + " --> " + destinationIP;
-            return summary;
         }
         // Layer 2 - ARP
         // 'ARP Request - ab:cd:ef:gh looking for 127.0.0.1'
@@ -166,12 +200,17 @@ public class PacketProcessor {
                 String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(SPA);
                 summary += sourceIP + " is " + sourceMAC;
             }
-            return summary;
         }
         // Layer 2 - Ethernet
-        // Work In Progress
+        // 'Ethernet [LAN] 54 bytes ab:cd:ef:gh --> ab:cd:ef:gh'
         else if (packet.hasHeader(new Ethernet())){
-            return "Ethernet";
+            Ethernet header = new Ethernet();
+            int size = packet.getHeader(header).getPayloadLength();
+            byte[] sourceBytes = packet.getHeader(header).source();
+            byte[] destinationBytes = packet.getHeader(header).destination();
+            String sourceMAC = org.jnetpcap.packet.format.FormatUtils.mac(sourceBytes);
+            String destinationMAC = org.jnetpcap.packet.format.FormatUtils.mac(destinationBytes);
+            summary = "Ethernet [LAN] " + size + " bytes " + sourceMAC + " --> " + destinationMAC;
         }
         return summary;
     }
