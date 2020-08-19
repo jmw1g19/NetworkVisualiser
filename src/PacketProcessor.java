@@ -12,7 +12,9 @@ import org.jnetpcap.protocol.voip.Rtp;
 import org.jnetpcap.protocol.voip.Sdp;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 
 /**
  * This class is responsible for performing analysis on a list of captured packets.
@@ -215,6 +217,57 @@ public class PacketProcessor {
         return summary;
     }
 
+    /**
+     * This function returns the number of TCP packets which have the RST flag.
+     * @param packetList The list of packets to check through.
+     * @return An integer with the number of reset connections.
+     */
+    public static int resetTCPConnections(ArrayList<JPacket> packetList){
+        int count = 0;
+        Tcp header = new Tcp();
+        ArrayList<JPacket> tcpPackets = findPacketsWithHeader(packetList, new Tcp());
+        for(JPacket p : tcpPackets){
+            if(p.getHeader(header).flags_RST()) { count++; }
+        }
+        return count;
+    }
+
+    /**
+     * This function returns the amount of TCP packets which have the URG flag set.
+     * @param packetList The list of packets to check through.
+     * @return An integer with the number of 'urgent' packets.
+     */
+    public static int urgentTCPPackets(ArrayList<JPacket> packetList){
+        int count = 0;
+        Tcp header = new Tcp();
+        ArrayList<JPacket> tcpPackets = findPacketsWithHeader(packetList, new Tcp());
+        for(JPacket p : tcpPackets){
+            if(p.getHeader(header).flags_URG()) { count++; }
+        }
+        return count;
+    }
+
+    public static ArrayList<String> listTCPConnections(ArrayList<JPacket> packetList){
+        // The idea is to find the number of TCP unique pairs. For this, we'll need a Set, and the IP/TCP headers.
+        Set<String> pairs = new HashSet<String>();
+        Tcp tcpHeader = new Tcp();
+        Ip4 ipHeader = new Ip4();
+        ArrayList<JPacket> tcpPackets = findPacketsWithHeader(packetList, new Tcp());
+        for(JPacket p : tcpPackets){
+            int source = p.getHeader(tcpHeader).source();
+            int destination = p.getHeader(tcpHeader).destination();
+            byte[] sourceBytes = p.getHeader(ipHeader).source();
+            String sourceIP = org.jnetpcap.packet.format.FormatUtils.ip(sourceBytes);
+            byte[] destinationBytes = p.getHeader(ipHeader).destination();
+            String destinationIP = org.jnetpcap.packet.format.FormatUtils.ip(destinationBytes);
+            if(!pairs.contains(destinationIP + ":" + destination + " and " + sourceIP + ":" + source)) {
+                pairs.add(sourceIP + ":" + source + " and " + destinationIP + ":" + destination);
+            }
+            // TODO: Is this a reset packet? If so, that means another connection may be established.
+            // To check this, we'd need to see if a three-way handshake occurs.
+        }
+        return new ArrayList<String>(pairs);
+    }
     // Function ideas:
     // -- Categorise each packet into a group based on their headers; video, VoIP, etc.
     // -- TCP conversation count, failed acknowledgment percentage, retransmission rate, etc.

@@ -93,12 +93,14 @@ public class NetworkVisualiser extends Application {
         // Call all its' functions.
         UI.generateChart(packets);
         UI.generatePacketSelector(packets);
+        UI.generateLayer4Information(packets);
 
         // Set the 'stage' object, adjust some options, and show the GUI.
         stage.setScene(UI.getRoot());
         stage.setTitle("NetworkVisualiser - Work In Progress");
         stage.setMinHeight(600);
         stage.setMinWidth(600);
+        System.out.println(PacketProcessor.listTCPConnections(packets));
         stage.show();
     }
 
