@@ -71,6 +71,9 @@ public class NetworkVisualiser extends Application {
             e.printStackTrace();
         }
 
+        // If no packets are captured, close the program.
+        if(packets.size() == 0) { System.exit(-1); }
+
         // Example processing: total amount of data captured, packets per second and data per second.
         System.out.println("You captured " + PacketProcessor.totalSize(packets) + " bytes worth of data!");
         System.out.println(PacketProcessor.packetsPerSecond(packets, packets.get(0).getCaptureHeader().seconds()));

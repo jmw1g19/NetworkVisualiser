@@ -160,13 +160,16 @@ public class UserInterface{
         tcpStatisticsHeader.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
         VBox.setVgrow(tcpStatisticsHeader, Priority.ALWAYS); tcpStatisticsHeader.setAlignment(Pos.CENTER);
 
-        Label connectionCount = new Label(PacketProcessor.listTCPConnections(packetList).size() + " unique connections");
+        ArrayList<String> TCPConnections = PacketProcessor.listTCPConnections(packetList);
+        Label connectionCount = new Label( TCPConnections.size() + " unique connections");
         connectionCount.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
         VBox.setVgrow(connectionCount, Priority.ALWAYS); connectionCount.setAlignment(Pos.CENTER);
         Button showConnections = new Button("Show List of Connections");
+        showConnections.addEventHandler(MouseEvent.MOUSE_CLICKED, new UserInterfaceHandler.ConnectionListClick(TCPConnections));
         showConnections.setStyle("-fx-font-size: 0.75em; ");
 
-        Label threeWayHandshakes = new Label("___ three-way handshakes");
+        // TODO: Three-way handshake logic.
+        Label threeWayHandshakes = new Label("# three-way handshakes");
         threeWayHandshakes.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
         VBox.setVgrow(threeWayHandshakes, Priority.ALWAYS); threeWayHandshakes.setAlignment(Pos.CENTER);
         Button showHandshakes = new Button("Show All Handshakes");
