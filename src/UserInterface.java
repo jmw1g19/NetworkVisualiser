@@ -12,6 +12,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 import org.jnetpcap.packet.JPacket;
 import org.jnetpcap.protocol.tcpip.Tcp;
 import org.jnetpcap.protocol.tcpip.Udp;
@@ -54,15 +55,12 @@ public class UserInterface{
 
         // Generate the tab objects.
         Tab tab1 = new Tab("Overall", chartPane);
-        Tab tab2 = new Tab("Layer 2"  , new Label("Work In Progress"));
-        Tab tab3 = new Tab("Layer 3" , new Label("Work In Progress"));
         Tab tab4 = new Tab("Layer 4"  , layer4Pane);
-        Tab tab5 = new Tab("Layer 7" , new Label("Work In Progress"));
 
         // Set up the TabPane.
         mainContent = new TabPane();
         mainContent.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        mainContent.getTabs().addAll(tab1, tab2, tab3, tab4, tab5);
+        mainContent.getTabs().addAll(tab1, tab4);
     }
 
     /**
@@ -139,6 +137,16 @@ public class UserInterface{
     }
 
     public void generateLayer4Information(ArrayList<JPacket> packetList){
+        // "Proof-of-Concept" Placeholders
+        Label proofOfConcept1 = new Label("Proof of Concept");
+        proofOfConcept1.setAlignment(Pos.CENTER); proofOfConcept1.setTextAlignment(TextAlignment.CENTER);
+        Label proofOfConcept2 = new Label("Proof of Concept");
+        proofOfConcept1.setAlignment(Pos.CENTER); proofOfConcept2.setTextAlignment(TextAlignment.CENTER);
+
+        layer4Pane.getChildren().addAll(proofOfConcept1, proofOfConcept2);
+        GridPane.setColumnIndex(proofOfConcept1, 0); GridPane.setColumnIndex(proofOfConcept2, 1);
+        GridPane.setRowIndex(proofOfConcept1, 0); GridPane.setRowIndex(proofOfConcept2, 1);
+
         // TCP vs. UDP Pie Chart
         ObservableList<PieChart.Data> pieChartData =
                 FXCollections.observableArrayList(
@@ -169,6 +177,9 @@ public class UserInterface{
         showConnections.setStyle("-fx-font-size: 0.75em; ");
 
         // TODO: Three-way handshake logic.
+        // The function will need to iterate through until it finds a packet with SYN.
+        // Then, it will need to search onwards until it finds SYN ACK from the destination of the last packet.
+        // Then, it needs to find the ACK from the source of the first packet.
         Label threeWayHandshakes = new Label("# three-way handshakes");
         threeWayHandshakes.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
         VBox.setVgrow(threeWayHandshakes, Priority.ALWAYS); threeWayHandshakes.setAlignment(Pos.CENTER);

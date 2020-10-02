@@ -1,5 +1,5 @@
 # NetworkVisualiser
-A tool to visualise network traffic, built using jNetPcap.
+A proof-of-concept tool to visualise network traffic, built using jNetPcap.
 
 ## About
 This tool is being built as part of an online learning course. The idea is simple - can I put my new knowledge of networking to the test and create a tool similar to Wireshark?
